@@ -37,7 +37,7 @@ logger.addHandler(handler)
 
 
 def send_message(bot, message):
-    """Отправка сообщения"""
+    """Отправка сообщения."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logger.info('Сообщение отправлено')
@@ -46,7 +46,7 @@ def send_message(bot, message):
 
 
 def get_api_answer(current_timestamp):
-    """Запрос к API"""
+    """Запрос к API."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     try:
@@ -65,7 +65,7 @@ def get_api_answer(current_timestamp):
 
 
 def check_response(response):
-    """Проверка корректности ответа API"""
+    """Проверка корректности ответа API."""
     if not isinstance(response, dict):
         logger.error('Ответ API не соответствует ожиданиям')
         raise TypeError('Ответ API не соответствует ожиданиям')
@@ -80,7 +80,7 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """Извлечение из информации о домашней работе её статуса"""
+    """Извлечение из информации о домашней работе её статуса."""
     homework_name = homework.get('homework_name')
     homework_status = homework.get('status')
     verdict = HOMEWORK_STATUSES[homework_status]
@@ -94,6 +94,7 @@ def parse_status(homework):
 
 
 def check_tokens():
+    """Проверка токенов."""
     tokens = {
         'PRACTICUM_TOKEN': PRACTICUM_TOKEN,
         'TELEGRAM_TOKEN': TELEGRAM_TOKEN,
@@ -101,7 +102,7 @@ def check_tokens():
     }
     for token in tokens:
         if tokens[token] is None:
-            logger.critical(f'Отсутствует обязательная переменная окружения {token}')
+            logger.critical(f'Отсутствует токен {token}')
             return False
     return True
 
@@ -109,7 +110,7 @@ def check_tokens():
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
-        logging.critical('Отсутствует обязательная переменная окружения')
+        logging.critical('Отсутствует токен')
         exit()
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
