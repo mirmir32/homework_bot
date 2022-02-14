@@ -1,3 +1,4 @@
+from json import JSONDecodeError
 import logging
 import os
 import requests
@@ -53,15 +54,19 @@ def get_api_answer(current_timestamp):
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
     except requests.exceptions.ConnectTimeout as error:
         logger.error(f'Превышено время ожидания ответа сервера {error}')
-        raise error
+        raise error(f'Превышено время ожидания ответа сервера {error}')
     except requests.exceptions.RequestException as error:
         logger.error(f'Ошибка соединения {error}')
-        raise error
+        raise error(f'Ошибка соединения {error}')
     if response.status_code != HTTPStatus.OK:
         logger.error(f'Эндпоинт {ENDPOINT} недоступен.'
                      f'Код ответа сервера: {response.status_code}')
         raise requests.HTTPError(f'Код ответа сервера: {response.status_code}')
-    return response.json()
+    try:
+        return response.json()
+    except JSONDecodeError:
+        logger.error('Ответ не являются валидным JSON')
+        raise JSONDecodeError('Ответ не являются валидным JSON')
 
 
 def check_response(response):
@@ -83,13 +88,13 @@ def parse_status(homework):
     """Извлечение из информации о домашней работе её статуса."""
     homework_name = homework.get('homework_name')
     homework_status = homework.get('status')
-    verdict = HOMEWORK_STATUSES[homework_status]
     if homework_status is None:
         logger.error('Отсутствует ключ homework_status')
         raise KeyError('Отсутствует ключ homework_status')
     if homework_status not in HOMEWORK_STATUSES:
         logger.error('Неожиданный статус')
-        raise ValueError('Неожиданный статус')
+        raise KeyError('Неожиданный статус')
+    verdict = HOMEWORK_STATUSES[homework_status]
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
@@ -110,9 +115,15 @@ def check_tokens():
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
-        logging.critical('Отсутствует токен')
+        logger.critical('Отсутствует токен')
         exit()
-    bot = telegram.Bot(token=TELEGRAM_TOKEN)
+    try:
+        bot = telegram.Bot(token=TELEGRAM_TOKEN)
+        bot.send_message(TELEGRAM_CHAT_ID, 'Бот корректно инициализировался')
+        logger.info('Бот корректно инициализировался')
+    except telegram.error.TelegramError:
+        logger.critical('Бот ушел в отпуск!')
+        exit()
     current_timestamp = int(time.time())
     while True:
         try:
@@ -120,14 +131,14 @@ def main():
             check_response(response)
             new_homework = response.get('homeworks')
             if new_homework:
-                logging.info('Работа найдена')
+                logger.info('Работа найдена')
                 send_message(bot, parse_status(new_homework[0]))
             else:
-                logging.exception('Бот не нашел домашнюю работу')
-                send_message(bot, 'Бот не нашел домашнюю работу')
-                raise ValueError('Бот не нашел домашнюю работу')
+                logger.exception('Обновления отсутствуют')
+                send_message(bot, 'Обновления отсутствуют')
+                raise ValueError('Обновления отсутствуют')
         except Exception as error:
-            logging.exception(f'Ошибка: {error}')
+            logger.exception(f'Ошибка: {error}')
         finally:
             time.sleep(int(RETRY_TIME))
 
