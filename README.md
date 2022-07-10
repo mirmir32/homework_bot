@@ -5,7 +5,7 @@
 ## Установка
 Клонируем репозиторий:
 ```
-git clone whoishacked/homework_bot
+git clone mirmir32/homework_bot
 ```
 Переходим в папку с проектом:
 ```
@@ -30,7 +30,6 @@ pip instal -r requirements.txt
 ```
 python3 homework.py
 ```
-Для запуска скрипта по расписанию используйте CRON (https://wikipedia.org/wiki/Cron) или разместите проект на Heroku (https://www.heroku.com/).
 
 ## Используемые технологии
 Краткий список:
